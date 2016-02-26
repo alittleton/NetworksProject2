@@ -13,6 +13,10 @@
 
 using namespace std;
 
+//function prototypes
+void sendFile(char* msg, int sockid);
+void receiveFile(char* msg, int sockid);
+
 int connect_to_server(int port){
 
 
@@ -52,7 +56,7 @@ int connect_to_server(int port){
 	return sockfd;
 }
 
-int connect_to_client(int port){
+int runServer(int port){
 
 	int sockfd, newsockfd;
 	unsigned int clilen;
@@ -126,5 +130,112 @@ int sendMessage(int sockid, char* message){
 	}
 
 	return 0;
+
+}
+
+void parseCommand(char* msg, int sockid){
+
+	//cases for GET and PUT
+
+	if(strstr(msg, "PUT:")){
+
+		sendFile(msg, sockid);
+
+		//convert"PUT:" to "STOR:"
+		char * pch;
+		char* filename;
+	  	pch = strtok (msg,":");
+	  	while (pch != NULL)
+	  	{
+	   	 //printf ("%s\n",pch);
+	    	pch = strtok (NULL, ":");
+	    	if(pch != NULL)
+	    		filename = pch;
+	  	}
+
+	  	char newstr[] = "STOR:";
+		char file[sizeof(filename)];
+		strcpy(file, filename);
+		strcat(newstr, file);
+
+		sendMessage(sockid, newstr);
+
+
+	}
+	else{
+		//convert GET: to RTRV:
+		receiveFile(msg, sockid);
+		char * pch;
+		char* filename;
+	  	pch = strtok (msg,":");
+	  	while (pch != NULL)
+	  	{
+	   	 //printf ("%s\n",pch);
+	    	pch = strtok (NULL, ":");
+	    	if(pch != NULL)
+	    		filename = pch;
+	  	}
+
+	  	char newstr[] = "RCRV:";
+		char file[sizeof(filename)];
+		strcpy(file, filename);
+		strcat(newstr, file);
+
+		char* retval = (char*)malloc(sizeof(newstr)); //return a pointer to the message
+		sprintf(retval, "%s", newstr);	
+
+		sendMessage(sockid, retval);
+
+	}
+}
+
+void serverParseMessage(char* msg, int sockid){
+
+	if(strstr(msg, "STOR")){
+		receiveFile(msg, sockid);
+	}
+	else{
+		sendFile(msg, sockid);
+	}
+}
+
+void sendFile(char* msg, int sockid){
+	//check file exists try to open it
+	//if successful, send RTS
+
+	char * pch;
+	char* filename;
+  	pch = strtok (msg,":");
+  	while (pch != NULL)
+  	{
+   	 //printf ("%s\n",pch);
+    	pch = strtok (NULL, ":");
+    	if(pch != NULL)
+    		filename = pch;
+  	}
+
+  	cout << "sending file " << filename << endl;
+
+
+	
+
+}
+
+void receiveFile(char* msg, int sockid){
+	//check filename does not exist
+	//if not, send CTS
+
+	char * pch;
+	char* filename;
+  	pch = strtok (msg,":");
+  	while (pch != NULL)
+  	{
+   	 //printf ("%s\n",pch);
+    	pch = strtok (NULL, ":");
+    	if(pch != NULL)
+    		filename = pch;
+  	}
+
+  	cout << "Receiving file " << filename << endl;
 
 }

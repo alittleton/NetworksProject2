@@ -27,7 +27,7 @@ int main(int argc, char* argv[]){
 		cout << "Please provide a valid port number" << endl;
 	}
 
-	int sockid = connect_to_client(atoi(argv[1]));
+	int sockid = runServer(atoi(argv[1]));
 
 	if(sockid == -1){
 		cerr << "Bind error, please try again" << endl;
@@ -43,6 +43,8 @@ int main(int argc, char* argv[]){
 			done = true;
 			break;
 		}
+
+		serverParseMessage(msg, sockid);
 
 	}
 

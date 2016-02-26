@@ -32,6 +32,7 @@ int main(int argc, char* argv[]){
 	
 
 	int sockid = connect_to_server(atoi(argv[1]));
+	cout << "Ready to send commands" << endl;
 
 	char* msg;
 	char message[1024];
@@ -41,20 +42,14 @@ int main(int argc, char* argv[]){
 	while(!done){
 
 		cin.getline(message, sizeof(message));
-    	sendMessage(sockid, message);
 
     	if(strstr(message, "quit")){
 			done = true;
+			sendMessage(sockid, message);
 			break;
 		}
 
-		
-		msg = receiveMessage(sockid);
-
-		free(msg);
-
-		memset(message, '\0', sizeof(message));
-
+		parseCommand(message, sockid);
 	}
 	
 }
