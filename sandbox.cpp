@@ -9,7 +9,7 @@
 #include <netdb.h>  
 #include <cstdlib>
 #include <iostream>
-//#include <regex>
+#include <fstream>
 
 
 using namespace std;
@@ -18,27 +18,45 @@ int main(){
 
 	char str[] ="- This, a sample string.";
 	//char msg[] ="GET:filename.txt";
-	char* msg = "testing 1 2 3";
-	char other_msg[strlen(msg)];
-	strcpy(other_msg, msg);
+	//char* msg = "testing 1 2 3";
+	char filename[] = "file.txt";
 
-	char thing[strlen(str) + strlen(msg)];
-	strcpy(thing, other_msg);
-	strcat(thing, str);
+	ofstream fs;
+	fs.open (filename);
+	if(!fs.is_open())
+		cout << "NOPE" << endl;
 
-	cout << other_msg << endl;
-	//delete(msg);
-	cout << thing << endl;
+	fs << "Hello, World\nMy name is Andrew\n";
 
+	fs.close();
+
+	ifstream is;
+	is.open(filename);
+	if(!is.is_open()){
+		cout << "NOPE" << endl;
+	}
+	    // get length of file:
+    is.seekg (0, is.end);
+    int length = is.tellg();
+    is.seekg (0, is.beg);
+	char buf[length];
+	is.read(buf, length);
+
+	cout << "file size: " << length << endl << buf << endl;
+
+	is.close();
+
+
+
+
+	/*fstream file_ops;
+
+	file_ops.open("file.txt");
+	if(!file_ops.is_open())
+		cout << "NOPE" << endl;
+	file_ops << msg;
+	file_ops.close();*/
 	
-	
-
-	/*char buffer[] = "Hello, World";
-	cout << "buffer " << buffer<<endl;
-	char* response=(char*)malloc(sizeof(buffer));
-	sprintf(response, "%s", buffer);
-
-	cout << response << endl;*/
 
 
 	return 0;

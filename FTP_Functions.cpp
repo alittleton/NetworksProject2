@@ -10,12 +10,15 @@
 #include <netdb.h>  
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
 
 using namespace std;
 
 //function prototypes
-void sendFile(char* msg, int sockid);
-void receiveFile(char* msg, int sockid);
+void clientSendFile(char* msg, int sockid);
+void clientReceiveFile(char* msg, int sockid);
+void serverReceiveFile(char* msg, int sockid);
+void serverSendFile(char* msg, int sockid);
 
 int connect_to_server(int port){
 
@@ -141,8 +144,6 @@ void parseCommand(char* msg, int sockid){
 
 	if(strstr(msg, "PUT:")){
 
-		sendFile(msg, sockid);
-
 		//convert"PUT:" to "STOR:"
 		char * pch;
 		char* filename;
@@ -164,12 +165,12 @@ void parseCommand(char* msg, int sockid){
 		sprintf(retval, "%s", cmd);	
 
 		sendMessage(sockid, retval);
+		clientSendFile(msg, sockid);
 
 	}
 	else{
 		//convert GET: to RTRV:
-		receiveFile(msg, sockid);
-
+		
 		char * pch;
 		char* filename;
 	  	pch = strtok (temp_msg,":");
@@ -189,7 +190,8 @@ void parseCommand(char* msg, int sockid){
 		char* retval = (char*)malloc(sizeof(cmd)); //return a pointer to the message
 		sprintf(retval, "%s", cmd);	
 
-		sendMessage(sockid, retval);	
+		sendMessage(sockid, retval);
+		clientReceiveFile(msg, sockid);	
 
 	}
 }
@@ -197,14 +199,14 @@ void parseCommand(char* msg, int sockid){
 void serverParseMessage(char* msg, int sockid){
 
 	if(strstr(msg, "STOR")){
-		receiveFile(msg, sockid);
+		serverReceiveFile(msg, sockid);
 	}
 	else{
-		sendFile(msg, sockid);
+		serverSendFile(msg, sockid);
 	}
 }
 
-void sendFile(char* msg, int sockid){
+void clientSendFile(char* msg, int sockid){
 	//check file exists try to open it
 	//if successful, send RTS
 
@@ -222,14 +224,26 @@ void sendFile(char* msg, int sockid){
     		filename = pch;
   	}
 
-  	cout << "sending file " << filename << endl;
 
+	ifstream is;
+  	is.open(filename);
+  	if(!is.is_open())
+  		cout << "file not available" << endl;	
 
-	
+  	is.seekg (0, is.end);
+    int length = is.tellg();
+    is.seekg (0, is.beg);
+	char buf[length];
+	is.read(buf, length);
+
+	char* file = (char*)malloc(length); //return a pointer to the message
+	sprintf(file, "%s", buf);	
+
+	sendMessage(sockid, buf);
 
 }
 
-void receiveFile(char* msg, int sockid){
+void serverReceiveFile(char* msg, int sockid){
 	//check filename does not exist
 	//if not, send CTS
 
@@ -249,6 +263,71 @@ void receiveFile(char* msg, int sockid){
 
   	}
 
-  	cout << "Receiving file " << filename << endl;
+  	char* file = receiveMessage(sockid);
+
+  	cout << file << endl;
+
+}
+
+void clientReceiveFile(char* msg, int sockid){
+
+
+	char temp_msg[strlen(msg)];
+	strcpy(temp_msg, msg);
+
+	char * pch;
+	char* filename;
+  	pch = strtok (temp_msg,":");
+  	while (pch != NULL)
+  	{
+   	 //printf ("%s\n",pch);
+  		
+    	pch = strtok (NULL, ":");
+    	if(pch != NULL)
+    		filename = pch;
+
+  	}
+
+  	char* file = receiveMessage(sockid);
+
+  	cout << file << endl;
+
+}
+
+void serverSendFile(char* msg, int sockid){
+
+	char temp_msg[strlen(msg)];
+	strcpy(temp_msg, msg);
+
+	char * pch;
+	char* filename;
+  	pch = strtok (temp_msg,":");
+  	while (pch != NULL)
+  	{
+   	 //printf ("%s\n",pch);
+  		
+    	pch = strtok (NULL, ":");
+    	if(pch != NULL)
+    		filename = pch;
+
+  	}
+
+  	cout << filename << endl;
+  	
+  	ifstream is;
+  	is.open(filename);
+  	if(!is.is_open())
+  		cout << "file not available" << endl;	
+
+  	is.seekg (0, is.end);
+    int length = is.tellg();
+    is.seekg (0, is.beg);
+	char buf[length];
+	is.read(buf, length);
+
+	char* file = (char*)malloc(length); //return a pointer to the message
+	sprintf(file, "%s", buf);	
+
+	sendMessage(sockid, file);
 
 }

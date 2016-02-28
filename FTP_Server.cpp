@@ -32,6 +32,7 @@ int main(int argc, char* argv[]){
 
 	if(sockid == -1){
 		cerr << "Bind error, please try again" << endl;
+		return 1;
 	}
 
 	bool done = false;
