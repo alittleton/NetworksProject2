@@ -24,7 +24,8 @@ using namespace std;
 int main(int argc, char* argv[]){
 
 	if(argc < 2 || atoi(argv[1]) <= 10000){
-		cout << "Please provide a valid port number" << endl;
+		cout << "Please provide a valid port number greater than 10000" << endl;
+		return 1;
 	}
 
 	int sockid = runServer(atoi(argv[1]));
