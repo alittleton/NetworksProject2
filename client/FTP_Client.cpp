@@ -4,12 +4,16 @@
 create, listen, and start accepting
 on a socket, return socketid of accepted socket
 
+get user input
+
+send message to server
 wait to receive message, put into a char*
 
 call message parser, functions for each command?
 
 store/send file as appropriate
 */
+
 #include <iostream>
 #include <string.h>
 #include <stdio.h>
@@ -18,36 +22,38 @@ store/send file as appropriate
 
 using namespace std;
 
-//function prototypes
 
 
 int main(int argc, char* argv[]){
 
 	if(argc < 2 || atoi(argv[1]) <= 10000){
-		cout << "Please provide a valid port number greater than 10000" << endl;
-		return 1;
+		cout << "Please provide a valid port number" << endl;
 	}
+	
 
-	int sockid = runServer(atoi(argv[1]));
+	int sockid = connect_to_server(atoi(argv[1]));
+	cout << "Ready to send commands" << endl;
 
-	if(sockid == -1){
-		cerr << "Bind error, please try again" << endl;
-		return 1;
-	}
+	char* msg;
+	char message[1024];
 
 	bool done = false;
-	char* msg;
+
 	while(!done){
+		memset(message, '\0', sizeof(message));
 
-		msg = receiveMessage(sockid);
+		cin.getline(message, sizeof(message));
 
-		if(strstr(msg, "quit")){
+    	if(strstr(message, "quit")){
 			done = true;
+			sendMessage(sockid, message);
 			break;
 		}
 
-		serverParseMessage(msg, sockid);
-
+		parseCommand(message, sockid);
 	}
-
+	
 }
+
+
+

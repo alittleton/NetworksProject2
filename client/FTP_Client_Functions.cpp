@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <netinet/in.h> 
 #include <unistd.h>
 #include <netdb.h>  
@@ -106,17 +107,18 @@ int runServer(int port){
 char* receiveMessage(int sockid){
 
 	int msgSize;
-	char buffer[1016]; // 
-	memset(buffer, '\0', 1016); // Clear the buffer.
+	char buffer[4096]; // 
+	memset(buffer, '\0', 4096); // Clear the buffer.
 	
-	if((msgSize = recv(sockid, buffer, 1015, 0)) < 0) 
+	if((msgSize = recv(sockid, buffer, 4095, 0)) < 0) 
 	{
 		cerr << "Receive error.";
 	}
-	
-	//cout << "buffer" << buffer<<endl;
+
 	char* response=(char*)malloc(sizeof(buffer));
 	sprintf(response, "%s", buffer);
+
+	memset(buffer, '\0', 4096); // Clear the buffer.
 
 	return response;
 
@@ -161,10 +163,13 @@ void parseCommand(char* msg, int sockid){
 		strcpy(cmd, newstr);
 		strcat(cmd, filename);
 
-		char* retval = (char*)malloc(sizeof(cmd)); //return a pointer to the message
-		sprintf(retval, "%s", cmd);	
+		char* cmdptr = (char*)malloc(sizeof(cmd)); //return a pointer to the message
+		memset(cmdptr, '\0', sizeof(cmdptr));
+		sprintf(cmdptr, "%s", cmd);	
 
-		sendMessage(sockid, retval);
+		//cout << "command: " << cmdptr << endl;
+
+		sendMessage(sockid, cmdptr);
 		clientSendFile(msg, sockid);
 
 	}
@@ -188,6 +193,7 @@ void parseCommand(char* msg, int sockid){
 		strcat(cmd, filename);	
 
 		char* retval = (char*)malloc(sizeof(cmd)); //return a pointer to the message
+		memset(retval, '\0', sizeof(retval));
 		sprintf(retval, "%s", cmd);	
 
 		sendMessage(sockid, retval);
@@ -197,6 +203,7 @@ void parseCommand(char* msg, int sockid){
 }
 
 void serverParseMessage(char* msg, int sockid){
+	//cout << "parsing" << endl << endl;
 
 	if(strstr(msg, "STOR")){
 		serverReceiveFile(msg, sockid);
@@ -224,11 +231,15 @@ void clientSendFile(char* msg, int sockid){
     		filename = pch;
   	}
 
+  	//cout << "Sending: " << filename << endl;
+
 
 	ifstream is;
   	is.open(filename);
-  	if(!is.is_open())
+  	if(!is.is_open()){
   		cout << "file not available" << endl;	
+  		return;
+  	}
 
   	is.seekg (0, is.end);
     int length = is.tellg();
@@ -236,10 +247,15 @@ void clientSendFile(char* msg, int sockid){
 	char buf[length];
 	is.read(buf, length);
 
-	char* file = (char*)malloc(length); //return a pointer to the message
+	char* file = (char*)malloc(sizeof(buf)); //return a pointer to the message
 	sprintf(file, "%s", buf);	
 
-	sendMessage(sockid, buf);
+	//cout << "buf" << endl << buf << endl;
+
+	//cout << "sending: " << file << endl;
+
+	sendMessage(sockid, file);
+	//sendMessage(sockid, "Goodbye");
 
 }
 
@@ -263,9 +279,17 @@ void serverReceiveFile(char* msg, int sockid){
 
   	}
 
-  	char* file = receiveMessage(sockid);
+  	char* server_recv_file = receiveMessage(sockid);
+  	cout << server_recv_file << endl << endl;
+  	cout << endl;
 
-  	cout << file << endl;
+  	ofstream outfile;
+ 	outfile.open(filename, ofstream::app);
+
+ 	outfile << server_recv_file;
+ 	outfile.close();
+
+ 	//memset(server_recv_file, '\0', sizeof(server_recv_file));
 
 }
 
@@ -288,9 +312,32 @@ void clientReceiveFile(char* msg, int sockid){
 
   	}
 
-  	char* file = receiveMessage(sockid);
+  	cout << "Receiving: " << filename << endl;
 
-  	cout << file << endl;
+ 	ofstream outfile;
+ 	outfile.open(filename, ofstream::app);
+
+
+
+  	//char* status = receiveMessage(sockid);
+  	/*char* go_ahead;
+
+  	do{
+  		go_ahead=receiveMessage(sockid);
+  	}while(!strstr(go_ahead, "RTS"));*/
+
+  	//memset(status, '\0', sizeof(status));
+
+  	char* clientFile = receiveMessage(sockid);
+
+  	cout << clientFile << endl;
+  	cout << endl;
+
+  	outfile << clientFile;
+
+ 	outfile.close();	
+
+ 	memset(clientFile, '\0', sizeof(clientFile));	
 
 }
 
@@ -312,12 +359,14 @@ void serverSendFile(char* msg, int sockid){
 
   	}
 
-  	cout << filename << endl;
+  	//cout << "Sending: " << filename << endl;
+
+  	//cout << filename << endl;
   	
   	ifstream is;
   	is.open(filename);
-  	if(!is.is_open())
-  		cout << "file not available" << endl;	
+  	
+  	
 
   	is.seekg (0, is.end);
     int length = is.tellg();
@@ -325,9 +374,22 @@ void serverSendFile(char* msg, int sockid){
 	char buf[length];
 	is.read(buf, length);
 
-	char* file = (char*)malloc(length); //return a pointer to the message
-	sprintf(file, "%s", buf);	
+	// char thing[11];
+	// sprintf(thing, "CONT:%d:", length);
+	// char otherthing[strlen(thing) + strlen(buf)];
+	// strcpy(otherthing, thing);
+	// strcat(otherthing, buf); 
 
-	sendMessage(sockid, file);
+	char* retval = (char*)malloc(sizeof(buf)); //return a pointer to the message
+	sprintf(retval, "%s", buf);
+
+	//cout << "buf" << endl << buf << endl;
+
+	cout << "sending: " << filename << endl;	
+
+	//sendMessage(sockid, (char*)"RTS");
+
+	sendMessage(sockid, retval);
+	//sendMessage(sockid, "Hello");
 
 }
