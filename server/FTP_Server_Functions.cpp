@@ -371,6 +371,7 @@ void serverSendFile(char* msg, int sockid){
     is.seekg (0, is.beg);
 	char buf[length];
 	is.read(buf, length);
+	strcat(buf, "\0");
 
 	// char thing[11];
 	// sprintf(thing, "CONT:%d:", length);

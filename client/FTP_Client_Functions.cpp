@@ -196,6 +196,8 @@ void parseCommand(char* msg, int sockid){
 		memset(retval, '\0', sizeof(retval));
 		sprintf(retval, "%s", cmd);	
 
+		//cout << "command: " << retval << endl;
+
 		sendMessage(sockid, retval);
 		clientReceiveFile(msg, sockid);	
 
@@ -246,6 +248,7 @@ void clientSendFile(char* msg, int sockid){
     is.seekg (0, is.beg);
 	char buf[length];
 	is.read(buf, length);
+	strcat(buf, "\0");
 
 	char* file = (char*)malloc(sizeof(buf)); //return a pointer to the message
 	sprintf(file, "%s", buf);	
