@@ -5,11 +5,12 @@ using namespace std;
 
 int main(){
 
-	char buf[] = "Hello, World";
-	strcat(buf, "\0");
+	char buf[] = "RTS:file.txt";
+	char newbuf[sizeof buf];
 
-	cout << buf << endl;
-	cout << strstr(buf, "\0") << endl;
+	strncpy(newbuf, buf + 4, strlen(buf));
+	
+	cout << newbuf << endl;
 
 	return 0;
 }

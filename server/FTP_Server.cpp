@@ -1,15 +1,6 @@
 //Andrew Littleton CSC 4200 Spring '16
 
-/*
-create, listen, and start accepting
-on a socket, return socketid of accepted socket
 
-wait to receive message, put into a char*
-
-call message parser, functions for each command?
-
-store/send file as appropriate
-*/
 #include <iostream>
 #include <string.h>
 #include <stdio.h>
@@ -40,7 +31,6 @@ int main(int argc, char* argv[]){
 	while(!done){
 
 		msg = receiveMessage(sockid);
-		//cout << "received " << msg << endl;
 
 		if(strstr(msg, "quit")){
 			done = true;

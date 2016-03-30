@@ -42,7 +42,7 @@ int main(int argc, char* argv[]){
 	while(!done){
 		memset(message, '\0', sizeof(message));
 
-		cin.getline(message, sizeof(message));
+		cin >> message;
 
     	if(strstr(message, "quit")){
 			done = true;

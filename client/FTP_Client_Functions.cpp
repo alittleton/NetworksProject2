@@ -18,8 +18,7 @@ using namespace std;
 //function prototypes
 void clientSendFile(char* msg, int sockid);
 void clientReceiveFile(char* msg, int sockid);
-void serverReceiveFile(char* msg, int sockid);
-void serverSendFile(char* msg, int sockid);
+
 
 int connect_to_server(int port){
 
@@ -60,55 +59,12 @@ int connect_to_server(int port){
 	return sockfd;
 }
 
-int runServer(int port){
-
-	int sockfd, newsockfd;
-	unsigned int clilen;
-		
-	// Structures for client and server addresses.
-	struct sockaddr_in server_addr, cli_addr;
-	
-	// Create the server socket.
-	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
-	{
-		cerr << "Socket error.";
-		exit(1);
-	}
-	
-	memset((void *) &server_addr, 0, sizeof(server_addr)); // Clear the server address structure.
-	
-	// Set up the server address structure.
-	server_addr.sin_family = AF_INET;
-	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	server_addr.sin_port = htons(port);
-	
-	// Bind the socket to the server address and port.
-	if(bind(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) 
-	{
-		return -1;
-	}
-	
-	// Listen on the socket, queue 5 incoming connections.
-	listen(sockfd, 10);
-	
-	// Loop forever, handling connections.
-	
-	clilen = sizeof(cli_addr);
-	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-	if(newsockfd < 0) 
-	{
-		cerr << "Accept error.";
-		exit(1);
-	}
-		
-	return newsockfd;
-}
-
 char* receiveMessage(int sockid){
 
 	int msgSize;
 	char buffer[4096]; // 
 	memset(buffer, '\0', 4096); // Clear the buffer.
+	//cout << "client receiving" << endl;
 	
 	if((msgSize = recv(sockid, buffer, 4095, 0)) < 0) 
 	{
@@ -204,21 +160,19 @@ void parseCommand(char* msg, int sockid){
 	}
 }
 
-void serverParseMessage(char* msg, int sockid){
-	//cout << "parsing" << endl << endl;
-
-	if(strstr(msg, "STOR")){
-		serverReceiveFile(msg, sockid);
-	}
-	else{
-		serverSendFile(msg, sockid);
-	}
-}
-
 void clientSendFile(char* msg, int sockid){
 	//check file exists try to open it
-	//if successful, send RTS
+	
+	char* servmsg = receiveMessage(sockid);
+	//cout << servmsg << endl;
 
+	if(strstr(servmsg, "ERR")){
+		char error[sizeof servmsg];
+		//strcpy(error, servmsg + 4);
+		cout << "Error: " << servmsg + 4 << endl;
+		return; 
+	}
+	
 	char temp_msg[strlen(msg)];
 	strcpy(temp_msg, msg);
 
@@ -241,6 +195,7 @@ void clientSendFile(char* msg, int sockid){
   	if(!is.is_open()){
   		cout << "file not available" << endl;	
   		return;
+  		is.close();
   	}
 
   	is.seekg (0, is.end);
@@ -250,8 +205,9 @@ void clientSendFile(char* msg, int sockid){
 	is.read(buf, length);
 	strcat(buf, "\0");
 
-	char* file = (char*)malloc(sizeof(buf)); //return a pointer to the message
-	sprintf(file, "%s", buf);	
+	char file[sizeof buf + 5]; 
+	strcpy(file, "CONT:");
+	strncpy(file+5, buf, sizeof buf);	
 
 	//cout << "buf" << endl << buf << endl;
 
@@ -259,52 +215,26 @@ void clientSendFile(char* msg, int sockid){
 
 	sendMessage(sockid, file);
 	//sendMessage(sockid, "Goodbye");
-
-}
-
-void serverReceiveFile(char* msg, int sockid){
-	//check filename does not exist
-	//if not, send CTS
-
-	char temp_msg[strlen(msg)];
-	strcpy(temp_msg, msg);
-
-	char * pch;
-	char* filename;
-  	pch = strtok (temp_msg,":");
-  	while (pch != NULL)
-  	{
-   	 //printf ("%s\n",pch);
-  		
-    	pch = strtok (NULL, ":");
-    	if(pch != NULL)
-    		filename = pch;
-
-  	}
-
-  	char* server_recv_file = receiveMessage(sockid);
-  	cout << server_recv_file << endl << endl;
-  	cout << endl;
-
-  	ofstream outfile;
- 	outfile.open(filename, ofstream::app);
-
- 	outfile << server_recv_file;
- 	outfile.close();
-
- 	//memset(server_recv_file, '\0', sizeof(server_recv_file));
+	
+	is.close();
 
 }
 
 void clientReceiveFile(char* msg, int sockid){
 
+	char* servmsg = receiveMessage(sockid);
+	//cout << servmsg << endl;
 
-	char temp_msg[strlen(msg)];
-	strcpy(temp_msg, msg);
+	if(strstr(servmsg, "ERR")){
+		char error[sizeof servmsg];
+		//strcpy(error, servmsg + 4);
+		cout << "Error: " << servmsg + 4 << endl;
+		return; 
+	}
 
 	char * pch;
 	char* filename;
-  	pch = strtok (temp_msg,":");
+  	pch = strtok (msg,":");
   	while (pch != NULL)
   	{
    	 //printf ("%s\n",pch);
@@ -318,81 +248,24 @@ void clientReceiveFile(char* msg, int sockid){
   	cout << "Receiving: " << filename << endl;
 
  	ofstream outfile;
- 	outfile.open(filename, ofstream::app);
+ 	outfile.open(filename);
+ 	cout << servmsg + 9 + strlen(filename) << endl;
 
 
+  	//char* clientFile = receiveMessage(sockid);
 
-  	//char* status = receiveMessage(sockid);
-  	/*char* go_ahead;
+  // 	cout << clientFile << endl;
+  // 	cout << endl;
 
-  	do{
-  		go_ahead=receiveMessage(sockid);
-  	}while(!strstr(go_ahead, "RTS"));*/
-
-  	//memset(status, '\0', sizeof(status));
-
-  	char* clientFile = receiveMessage(sockid);
-
-  	cout << clientFile << endl;
-  	cout << endl;
-
-  	outfile << clientFile;
+  	//outfile << clientFile + 5;
+  	outfile << servmsg 9 + strlen(filename);
 
  	outfile.close();	
 
- 	memset(clientFile, '\0', sizeof(clientFile));	
+ 	// memset(clientFile, '\0', sizeof(clientFile));	
+
+ 	outfile.close();
 
 }
 
-void serverSendFile(char* msg, int sockid){
 
-	char temp_msg[strlen(msg)];
-	strcpy(temp_msg, msg);
-
-	char * pch;
-	char* filename;
-  	pch = strtok (temp_msg,":");
-  	while (pch != NULL)
-  	{
-   	 //printf ("%s\n",pch);
-  		
-    	pch = strtok (NULL, ":");
-    	if(pch != NULL)
-    		filename = pch;
-
-  	}
-
-  	//cout << "Sending: " << filename << endl;
-
-  	//cout << filename << endl;
-  	
-  	ifstream is;
-  	is.open(filename);
-  	
-  	
-
-  	is.seekg (0, is.end);
-    int length = is.tellg();
-    is.seekg (0, is.beg);
-	char buf[length];
-	is.read(buf, length);
-
-	// char thing[11];
-	// sprintf(thing, "CONT:%d:", length);
-	// char otherthing[strlen(thing) + strlen(buf)];
-	// strcpy(otherthing, thing);
-	// strcat(otherthing, buf); 
-
-	char* retval = (char*)malloc(sizeof(buf)); //return a pointer to the message
-	sprintf(retval, "%s", buf);
-
-	//cout << "buf" << endl << buf << endl;
-
-	cout << "sending: " << filename << endl;	
-
-	//sendMessage(sockid, (char*)"RTS");
-
-	sendMessage(sockid, retval);
-	//sendMessage(sockid, "Hello");
-
-}

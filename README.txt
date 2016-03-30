@@ -1,5 +1,4 @@
-I was not able to implement the RTS, CTS, CONT, or ERR messages.
-This program does use the RCRV and STOR messages.
+All protocol specified messages are implemented and working.
 
 The Client and Server files are in their own directory.
 
